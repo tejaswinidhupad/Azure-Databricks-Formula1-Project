@@ -4,6 +4,14 @@
 
 # COMMAND ----------
 
+# MAGIC %run "../includes/configuration"
+
+# COMMAND ----------
+
+# MAGIC %run "../includes/common_functions"
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ##### Step 1 - Read the JSON file using the spark dataframe reader API
 
@@ -34,7 +42,7 @@ drivers_schema = StructType(fields=[StructField("driverId",IntegerType(),False),
 
 drivers_df = spark.read \
              .schema(drivers_schema) \
-             .json("dbfs:/mnt/formula1projectdl/raw/drivers.json")
+             .json(f"{raw_folder_path}/drivers.json")
 
 # COMMAND ----------
 
@@ -51,9 +59,12 @@ from pyspark.sql.functions import current_timestamp, col, lit, concat
 
 # COMMAND ----------
 
+drivers_with_ingestion_date_df = add_ingestion_date(drivers_df)
+
+# COMMAND ----------
+
 driver_with_columns_df = drivers_df.withColumnRenamed("driverId","driver_id") \
                                    .withColumnRenamed("driverRef","driver_ref") \
-                                   .withColumn("ingestion_date",current_timestamp()) \
                                    .withColumn("name",concat(col("name.forename"),lit(" "),col("name.surname")))
 
 # COMMAND ----------
@@ -78,4 +89,8 @@ display(drivers_final_df)
 
 # COMMAND ----------
 
-drivers_final_df.write.mode("overwrite").parquet("/mnt/formula1projectdl/processed/drivers")
+drivers_final_df.write.mode("overwrite").parquet(f"{processed_folder_path}/drivers")
+
+# COMMAND ----------
+
+dbutils.notebook.exit("Success")

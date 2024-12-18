@@ -4,6 +4,14 @@
 
 # COMMAND ----------
 
+# MAGIC %run "../includes/configuration"
+
+# COMMAND ----------
+
+# MAGIC %run "../includes/common_functions"
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ##### Step 1 - Read the CSV file using the spark dataframe reader API
 
@@ -25,7 +33,7 @@ lap_times_schema = StructType(fields=[StructField("raceId", IntegerType(), False
 
 lap_times_df = spark.read \
 .schema(lap_times_schema) \
-.csv("dbfs:/mnt/formula1projectdl/raw/lap_times")
+.csv(f"{raw_folder_path}/lap_times")
 
 # COMMAND ----------
 
@@ -36,17 +44,16 @@ lap_times_df = spark.read \
 
 # COMMAND ----------
 
+lap_times_with_ingestion_date_df = add_ingestion_date(lap_times_df)
+
+# COMMAND ----------
+
 from pyspark.sql.functions import current_timestamp
 
 # COMMAND ----------
 
-final_df = lap_times_df.withColumnRenamed("driverId", "driver_id") \
-.withColumnRenamed("raceId", "race_id") \
-.withColumn("ingestion_date", current_timestamp())
-
-# COMMAND ----------
-
-display(final_df)
+final_df = lap_times_with_ingestion_date_df.withColumnRenamed("driverId", "driver_id") \
+.withColumnRenamed("raceId", "race_id") 
 
 # COMMAND ----------
 
@@ -55,4 +62,8 @@ display(final_df)
 
 # COMMAND ----------
 
-final_df.write.mode("overwrite").parquet("/mnt/formula1projectdl/processed/lap_times")
+final_df.write.mode("overwrite").parquet(f"{processed_folder_path}/lap_times")
+
+# COMMAND ----------
+
+dbutils.notebook.exit("Success")

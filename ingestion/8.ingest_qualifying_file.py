@@ -4,6 +4,14 @@
 
 # COMMAND ----------
 
+# MAGIC %run "../includes/configuration"
+
+# COMMAND ----------
+
+# MAGIC %run "../includes/common_functions"
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ##### Step 1 - Read the JSON file using the spark dataframe reader API
 
@@ -29,7 +37,7 @@ qualifying_schema = StructType(fields=[StructField("qualifyId", IntegerType(), F
 qualifying_df = spark.read \
 .schema(qualifying_schema) \
 .option("multiLine", True) \
-.json("dbfs:/mnt/formula1projectdl/raw/qualifying")
+.json(f"{raw_folder_path}/qualifying")
 
 # COMMAND ----------
 
@@ -40,15 +48,18 @@ qualifying_df = spark.read \
 
 # COMMAND ----------
 
+qualifying_with_ingestion_date_df = add_ingestion_date(qualifying_df)
+
+# COMMAND ----------
+
 from pyspark.sql.functions import current_timestamp
 
 # COMMAND ----------
 
-final_df = qualifying_df.withColumnRenamed("qualifyId", "qualify_id") \
+final_df = qualifying_with_ingestion_date_df.withColumnRenamed("qualifyId", "qualify_id") \
 .withColumnRenamed("driverId", "driver_id") \
 .withColumnRenamed("raceId", "race_id") \
-.withColumnRenamed("constructorId", "constructor_id") \
-.withColumn("ingestion_date", current_timestamp())
+.withColumnRenamed("constructorId", "constructor_id") 
 
 # COMMAND ----------
 
@@ -57,8 +68,8 @@ final_df = qualifying_df.withColumnRenamed("qualifyId", "qualify_id") \
 
 # COMMAND ----------
 
-final_df.write.mode("overwrite").parquet("/mnt/formula1projectdl/processed/qualifying")
+final_df.write.mode("overwrite").parquet(f"{processed_folder_path}/qualifying")
 
 # COMMAND ----------
 
-display(spark.read.parquet('/mnt/formula1projectdl/processed/qualifying'))
+dbutils.notebook.exit("Success")

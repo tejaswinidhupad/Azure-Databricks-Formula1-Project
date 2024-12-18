@@ -4,6 +4,14 @@
 
 # COMMAND ----------
 
+# MAGIC %run "../includes/configuration"
+
+# COMMAND ----------
+
+# MAGIC %run "../includes/common_functions"
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ##### Step 1 - Read the JSON file using the spark dataframe reader API
 
@@ -36,7 +44,7 @@ results_schema = StructType(fields=[StructField("resultId", IntegerType(), False
 
 results_df = spark.read \
              .schema(results_schema) \
-             .json("dbfs:/mnt/formula1projectdl/raw/results.json")
+             .json(f"{raw_folder_path}/results.json")
 
 # COMMAND ----------
 
@@ -57,8 +65,11 @@ results_with_columns_df = results_df.withColumnRenamed("resultId", "result_id") 
                                     .withColumnRenamed("positionOrder", "position_order") \
                                     .withColumnRenamed("fastestLap", "fastest_lap") \
                                     .withColumnRenamed("fastestLapTime", "fastest_lap_time") \
-                                    .withColumnRenamed("fastestLapSpeed", "fastest_lap_speed") \
-                                    .withColumn("ingestion_date", current_timestamp()) 
+                                    .withColumnRenamed("fastestLapSpeed", "fastest_lap_speed")  
+
+# COMMAND ----------
+
+results_with_ingestion_date_df = add_ingestion_date(results_with_columns_df)
 
 # COMMAND ----------
 
@@ -71,7 +82,7 @@ from pyspark.sql.functions import col
 
 # COMMAND ----------
 
-results_final_df = results_with_columns_df.drop(col("statusId"))
+results_final_df = results_with_ingestion_date_df.drop(col("statusId"))
 
 # COMMAND ----------
 
@@ -80,4 +91,8 @@ results_final_df = results_with_columns_df.drop(col("statusId"))
 
 # COMMAND ----------
 
-results_final_df.write.mode("overwrite").partitionBy('race_id').parquet("/mnt/formula1projectdl/processed/results")
+results_final_df.write.mode("overwrite").partitionBy('race_id').parquet(f"{processed_folder_path}/results")
+
+# COMMAND ----------
+
+dbutils.notebook.exit("Success")
